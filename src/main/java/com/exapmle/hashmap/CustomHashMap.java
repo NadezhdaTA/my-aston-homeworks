@@ -1,10 +1,7 @@
 package main.java.com.exapmle.hashmap;
 
-import lombok.ToString;
-
 import java.util.Objects;
 
-@ToString
 public class CustomHashMap<K, V> {
 
     private static class Entry<K,V> {
@@ -111,6 +108,27 @@ public class CustomHashMap<K, V> {
 
     public boolean isEmpty() {
         return size == 0;
+    }
+
+    @Override
+    public String toString() {
+        if (buckets.length == 0) {
+            return "HashMap[]";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("HashMap[");
+        for (int i = 0; i < buckets.length; i++) {
+            Entry<K, V> e = buckets[i];
+            while (e != null) {
+                sb.append(e).append(";");
+                e = e.next;
+            }
+        }
+
+        sb.append("]");
+        return sb.toString();
+
     }
 
 }
