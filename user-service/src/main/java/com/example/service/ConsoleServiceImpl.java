@@ -71,7 +71,7 @@ public class ConsoleServiceImpl implements ConsoleService {
         System.out.println("\nВведите возраст пользователя: ");
         String age = scanner.nextLine();
         Integer ageInt = null;
-        if (age.equals("null")) {
+        if (!age.isEmpty()) {
             ageInt = Integer.parseInt(age);
         }
 

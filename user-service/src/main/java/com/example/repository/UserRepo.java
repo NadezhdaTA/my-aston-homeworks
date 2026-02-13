@@ -1,7 +1,7 @@
 package com.example.repository;
 
 
-import com.example.model.User;
+import com.example.model.entity.User;
 
 import java.util.Optional;
 

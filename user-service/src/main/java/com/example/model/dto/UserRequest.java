@@ -15,7 +15,7 @@ public class UserRequest {
     @NotBlank(message = "Имя пользователя не может быть пустым")
     private String userName;
 
-    @NotBlank(message = "Имя пользователя не может быть пустым")
+    @NotBlank(message = "Email не может быть пустым")
     @Email(message = "Email пользователя должен соответствовать шаблону name@domain.com")
     private String email;
 

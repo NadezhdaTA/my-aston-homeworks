@@ -1,6 +1,6 @@
 package com.example.service;
 
-import com.example.model.User;
+import com.example.model.entity.User;
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
 import com.example.model.dto.UserUpdateRequest;
