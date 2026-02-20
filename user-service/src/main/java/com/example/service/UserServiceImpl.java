@@ -4,9 +4,8 @@ import com.example.model.entity.User;
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
 import com.example.model.dto.UserUpdateRequest;
-import com.example.model.mapper.UserMapper;
+import com.example.mapper.UserMapper;
 import com.example.repository.UserRepo;
-import com.example.repository.UserRepoImpl;
 import com.example.util.UserValidator;
 import lombok.extern.log4j.Log4j2;
 
@@ -16,7 +15,11 @@ import java.util.Optional;
 
 @Log4j2
 public class UserServiceImpl implements UserService {
-    private final UserRepo userRepo = new UserRepoImpl();
+    private final UserRepo userRepo;
+
+    public UserServiceImpl(UserRepo userRepo) {
+        this.userRepo = userRepo;
+    }
 
     @Override
     public UserResponse createUser(UserRequest userRequest) {
