@@ -1,4 +1,4 @@
-package com.example.model.mapper;
+package com.example.mapper;
 
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
