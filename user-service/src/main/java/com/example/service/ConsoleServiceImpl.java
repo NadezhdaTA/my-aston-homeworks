@@ -3,6 +3,7 @@ package com.example.service;
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
 import com.example.model.dto.UserUpdateRequest;
+import com.example.repository.UserRepo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,8 @@ import java.util.Scanner;
 
 public class ConsoleServiceImpl implements ConsoleService {
     private static final Logger log = LogManager.getLogger(ConsoleServiceImpl.class);
-    private final UserService userService = new UserServiceImpl();
+    private UserRepo userRepo;
+    private final UserService userService = new UserServiceImpl(userRepo);
     private final Scanner scanner = new Scanner(System.in);
 
 
