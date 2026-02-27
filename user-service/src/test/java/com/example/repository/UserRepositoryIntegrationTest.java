@@ -1,9 +1,13 @@
 package com.example.repository;
 
 import com.example.model.entity.User;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -15,9 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-
+@SpringBootTest
 @Testcontainers
-public class UserRepoImplTest {
+@AutoConfigureMockMvc
+public class UserRepositoryIntegrationTest {
 
     @Container
     private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
@@ -25,27 +30,19 @@ public class UserRepoImplTest {
         .withUsername("testuser")
         .withPassword("testpass");
 
-    private UserRepoImpl userRepo;
-
-    @BeforeEach
-    void setUp() {
-        String jdbcUrl = postgres.getJdbcUrl();
-        HibernateUtil.buildSessionFactory(
-            "org.postgresql.Driver",
-            jdbcUrl,
-            "testuser",
-            "testpass",
-            "org.hibernate.dialect.PostgreSQLDialect",
-            "create-drop"
-    );
-
-    userRepo = new UserRepoImpl();
+    @DynamicPropertySource
+    static void setProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.liquibase.enabled", ()-> "false");
     }
 
-    @AfterEach
-    void tearDown() {
-        HibernateUtil.shutdown();
-    }
+    @Autowired
+    private UserRepository userRepo;
+
 
     @Test
     void createUser() {
@@ -58,7 +55,7 @@ public class UserRepoImplTest {
 
         assertNull(user.getId());
 
-        User created = userRepo.createUser(user);
+        User created = userRepo.save(user);
         assertNotNull(user.getId());
 
         assertThat(created)
@@ -76,7 +73,7 @@ public class UserRepoImplTest {
                 .createdAt(LocalDateTime.of(2020, 1, 1, 0, 0))
                 .build();
 
-        userRepo.createUser(user);
+        userRepo.save(user);
 
         User userForUpdate = User.builder()
                 .id(user.getId())
@@ -85,7 +82,7 @@ public class UserRepoImplTest {
                 .age(28)
                 .build();
 
-        User updated = userRepo.updateUser(userForUpdate);
+        User updated = userRepo.save(userForUpdate);
 
         assertThat(updated)
                 .usingRecursiveComparison()
@@ -102,14 +99,15 @@ public class UserRepoImplTest {
                 .createdAt(LocalDateTime.of(2020, 1, 1, 0, 0))
                 .build();
 
-        User created = userRepo.createUser(user);
+        User created = userRepo.save(user);
         assertNotNull(created);
 
-        Optional<User> found = userRepo.getUserById(created.getId());
+        Optional<User> found = userRepo.findUserById(created.getId());
         assertNotNull(found.get());
     }
 
-        @Test
+    @Test
+    @Transactional
     void deleteUser() {
         User user = User.builder()
                 .userName("user")
@@ -118,11 +116,11 @@ public class UserRepoImplTest {
                 .createdAt(LocalDateTime.of(2020, 1, 1, 0, 0))
                 .build();
 
-        User created = userRepo.createUser(user);
+        User created = userRepo.save(user);
         assertNotNull(created);
 
-        userRepo.deleteUser(created);
-        Optional<User> found = userRepo.getUserById(created.getId());
+        userRepo.deleteUserById(created.getId());
+        Optional<User> found = userRepo.findUserById(created.getId());
         assertThat(found).isEmpty();
     }
 

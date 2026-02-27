@@ -1,15 +1,13 @@
 package com.example;
 
-import com.example.service.ConsoleService;
-import com.example.service.ConsoleServiceImpl;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class UserServiceApplication {
 
     public static void main(String[] args) {
-        ConsoleService consoleService = new ConsoleServiceImpl();
-
-        consoleService.greeting();
-        consoleService.printMenu();
+        SpringApplication.run(UserServiceApplication.class, args);
     }
 }
 
