@@ -1,0 +1,3 @@
+databaseChangeLog:
+  - include:
+      file: scripts/001-init.sql

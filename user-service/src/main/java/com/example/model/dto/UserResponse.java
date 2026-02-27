@@ -1,5 +1,6 @@
 package com.example.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -9,6 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
+    @JsonProperty("id")
     private Long id;
     private String userName;
     private String email;
