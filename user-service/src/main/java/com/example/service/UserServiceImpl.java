@@ -1,74 +1,60 @@
 package com.example.service;
 
-import com.example.model.entity.User;
+import com.example.mapper.UserMapper;
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
 import com.example.model.dto.UserUpdateRequest;
-import com.example.mapper.UserMapper;
-import com.example.repository.UserRepo;
-import com.example.util.UserValidator;
+import com.example.model.entity.User;
+import com.example.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Log4j2
+@Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final UserRepo userRepo;
-
-    public UserServiceImpl(UserRepo userRepo) {
-        this.userRepo = userRepo;
-    }
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     public UserResponse createUser(UserRequest userRequest) {
-        log.info("Сохранение пользователя: {}", userRequest);
-        try {
-            UserValidator.validateUserRequest(userRequest);
-        } catch (IllegalArgumentException e) {
-            log.error("Данные пользователя не соответствуют заданным параметрам: {}", e.getMessage());
-        } catch (Exception e) {
-            log.error("Что-то пошло не так: {}", e.getMessage());
-        }
+        log.info("Создание пользователя: {}", userRequest);
 
-        User user = UserMapper.INSTANCE.toUser(userRequest);
+        User user = userMapper.toUser(userRequest);
         user.setCreatedAt(LocalDateTime.now());
-        user = userRepo.createUser(user);
-        return UserMapper.INSTANCE.toUserResponse(user);
+        user = userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 
     @Override
     public UserResponse updateUser(UserUpdateRequest userRequest) {
         log.info("Обновление пользователя: {}", userRequest);
-        try {
-            UserValidator.validateUserUpdateRequest(userRequest);
-        } catch (IllegalArgumentException e) {
-            log.error("Данные пользователя не соответствуют заданным параметрам: {}", e.getMessage());
-        } catch (Exception e) {
-            log.error("Что-то пошло не так: {}", e.getMessage());
-        }
 
         getUserById(userRequest.getUserId());
-        User user = UserMapper.INSTANCE.toUserFromUpdateRequest(userRequest);
-        user = userRepo.updateUser(user);
-        return UserMapper.INSTANCE.toUserResponse(user);
+        User user = userMapper.toUserFromUpdateRequest(userRequest);
+        user = userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 
     @Override
     public void deleteUser(Long userId) {
         log.info("Удаление пользователя: {}", userId);
-        User user = Optional.ofNullable(userRepo.getUserById(userId)).get()
+        User user = Optional.ofNullable(userRepository.findUserById(userId)).get()
                 .orElseThrow(() -> new NoSuchElementException("Пользователь с таким ID не найден."));
-        userRepo.deleteUser(user);
+        userRepository.deleteUserById(userId);
     }
 
     @Override
     public UserResponse getUserById(Long userId) {
         log.info("Получение пользователя по ID: {}", userId);
-        User user = Optional.ofNullable(userRepo.getUserById(userId)).get()
+        User user = Optional.ofNullable(userRepository.findUserById(userId)).get()
                 .orElseThrow(() -> new NoSuchElementException("Пользователь с таким ID не найден."));
-        return UserMapper.INSTANCE.toUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
 }
