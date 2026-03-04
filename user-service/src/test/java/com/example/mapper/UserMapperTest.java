@@ -5,16 +5,20 @@ import com.example.model.dto.UserResponse;
 import com.example.model.dto.UserUpdateRequest;
 import com.example.model.entity.User;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
+@SpringBootTest
+@TestPropertySource(properties = "spring.liquibase.enabled=false")
 class UserMapperTest {
 
-    private final UserMapper userMapper = Mappers.getMapper(UserMapper.class);
+    @Autowired
+    private UserMapper userMapper;
 
     @Test
     void toUser() {

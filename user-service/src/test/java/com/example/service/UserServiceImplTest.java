@@ -1,14 +1,18 @@
 package com.example.service;
 
+import com.example.mapper.UserMapper;
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
 import com.example.model.dto.UserUpdateRequest;
 import com.example.model.entity.User;
-import com.example.repository.UserRepo;
-import org.junit.jupiter.api.BeforeEach;
+import com.example.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -18,16 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@SpringBootTest
+@ExtendWith(SpringExtension.class)
 class UserServiceImplTest {
 
-    private final UserRepo userRepo = Mockito.mock(UserRepo.class);
-    private UserService userService;
+    @MockitoBean
+    private UserRepository userRepository;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(UserServiceImplTest.class);
-        userService = new UserServiceImpl(userRepo);
-    }
+    @MockitoBean
+    private UserMapper userMapper;
+
+    @Autowired
+    private UserServiceImpl userService;
 
     UserRequest userRequest = UserRequest.builder()
             .userName("user")
@@ -43,11 +49,20 @@ class UserServiceImplTest {
             .createdAt(LocalDateTime.of(2020, 1, 1, 0, 0))
             .build();
 
+    UserResponse userResponse = UserResponse.builder()
+            .id(5L)
+            .userName("user")
+            .email("email@domain.com")
+            .age(20)
+            .build();
+
 
     @Test
     void createUserTest_shouldCreateUser() {
 
-        Mockito.when(userRepo.createUser(any(User.class))).thenReturn(user);
+        Mockito.when(userRepository.save(any(User.class))).thenReturn(user);
+        Mockito.when(userMapper.toUser(userRequest)).thenReturn(user);
+        Mockito.when(userMapper.toUserResponse(user)).thenReturn(userResponse);
 
         UserResponse result = userService.createUser(userRequest);
 
@@ -58,7 +73,9 @@ class UserServiceImplTest {
         assertEquals(user.getAge(), result.getAge());
 
 
-        verify(userRepo, times(1)).createUser(any(User.class));
+        verify(userRepository, times(1)).save(any(User.class));
+        verify(userMapper, times(1)).toUser(userRequest);
+        verify(userMapper, times(1)).toUserResponse(user);
     }
 
     @Test
@@ -70,8 +87,10 @@ class UserServiceImplTest {
                 .age(20)
                 .build();
 
-        Mockito.when(userRepo.getUserById(userForUpdate.getUserId())).thenReturn(Optional.of(user));
-        Mockito.when(userRepo.updateUser(any(User.class))).thenReturn(user);
+        Mockito.when(userRepository.findUserById(userForUpdate.getUserId())).thenReturn(Optional.of(user));
+        Mockito.when(userRepository.save(any(User.class))).thenReturn(user);
+        Mockito.when(userMapper.toUserFromUpdateRequest(userForUpdate)).thenReturn(user);
+        Mockito.when(userMapper.toUserResponse(user)).thenReturn(userResponse);
 
         UserResponse updated = userService.updateUser(userForUpdate);
 
@@ -80,21 +99,28 @@ class UserServiceImplTest {
         assertEquals(userForUpdate.getUserName(), updated.getUserName());
         assertEquals(userForUpdate.getEmail(), updated.getEmail());
 
+        verify(userMapper, times(1)).toUserFromUpdateRequest(userForUpdate);
+        verify(userMapper, times(2)).toUserResponse(user);
+
     }
 
     @Test
     void getUserById() {
-        Mockito.when(userRepo.getUserById(5L)).thenReturn(Optional.of(user));
+        Mockito.when(userRepository.findUserById(5L)).thenReturn(Optional.of(user));
+        Mockito.when(userMapper.toUserResponse(user)).thenReturn(userResponse);
+
         UserResponse result = userService.getUserById(5L);
         assertNotNull(result);
+
+        verify(userMapper, times(1)).toUserResponse(user);
     }
 
     @Test
     void deleteUser() {
         Optional<User> userOptional = Optional.of(user);
-        Mockito.when(userRepo.getUserById(anyLong())).thenReturn(userOptional);
+        Mockito.when(userRepository.findUserById(anyLong())).thenReturn(userOptional);
 
         userService.deleteUser(5L);
-        verify(userRepo, times(1)).deleteUser(user);
+        verify(userRepository, times(1)).deleteUserById(user.getId());
     }
 }

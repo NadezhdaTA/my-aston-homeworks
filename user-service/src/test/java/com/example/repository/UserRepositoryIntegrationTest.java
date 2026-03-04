@@ -1,13 +1,14 @@
 package com.example.repository;
 
 import com.example.model.entity.User;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -21,24 +22,31 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SpringBootTest
 @Testcontainers
-public class UserRepoImplTest {
+@AutoConfigureMockMvc
+public class UserRepositoryIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
-            .withReuse(true);
-
-    @Autowired
-    private UserRepository userRepo;
+    private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+        .withDatabaseName("testdb")
+        .withUsername("testuser")
+        .withPassword("testpass");
 
     @DynamicPropertySource
-    static void setUp(DynamicPropertyRegistry registry) {
+    static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.liquibase.enabled", () -> "false");
+        registry.add("spring.liquibase.enabled", ()-> "false");
+    }
 
+    @Autowired
+    private UserRepository userRepo;
+
+    @AfterAll
+    static void tearDown() {
+        postgres.stop();
     }
 
     @Test
@@ -103,7 +111,8 @@ public class UserRepoImplTest {
         assertNotNull(found.get());
     }
 
-        @Test
+    @Test
+    @Transactional
     void deleteUser() {
         User user = User.builder()
                 .userName("user")
