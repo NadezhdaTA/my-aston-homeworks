@@ -1,5 +1,8 @@
 package com.example.service;
 
+import com.example.common.model.UserEvent;
+import com.example.common.model.UserStatus;
+import com.example.kafka.KafkaProducer;
 import com.example.mapper.UserMapper;
 import com.example.model.dto.UserRequest;
 import com.example.model.dto.UserResponse;
@@ -20,6 +23,7 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final KafkaProducer kafkaProducer;
 
     @Override
     public UserResponse createUser(UserRequest userRequest) {
@@ -28,6 +32,14 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.toUser(userRequest);
         user.setCreatedAt(LocalDateTime.now());
         user = userRepository.save(user);
+
+        UserEvent userEvent = UserEvent.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .status(UserStatus.CREATED)
+                .build();
+        kafkaProducer.sendUserEvent(userEvent);
+
         return userMapper.toUserResponse(user);
     }
 
@@ -47,6 +59,13 @@ public class UserServiceImpl implements UserService {
         User user = Optional.ofNullable(userRepository.findUserById(userId)).get()
                 .orElseThrow(() -> new NoSuchElementException("Пользователь с таким ID не найден."));
         userRepository.deleteUserById(userId);
+
+        UserEvent userEvent = UserEvent.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .status(UserStatus.DELETED)
+                .build();
+        kafkaProducer.sendUserEvent(userEvent);
     }
 
     @Override

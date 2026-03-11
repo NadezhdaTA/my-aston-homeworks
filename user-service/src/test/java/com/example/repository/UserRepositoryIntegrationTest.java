@@ -1,6 +1,7 @@
 package com.example.repository;
 
 import com.example.model.entity.User;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,6 +44,10 @@ public class UserRepositoryIntegrationTest {
     @Autowired
     private UserRepository userRepo;
 
+    @AfterAll
+    static void tearDown() {
+        postgres.stop();
+    }
 
     @Test
     void createUser() {
@@ -123,5 +128,4 @@ public class UserRepositoryIntegrationTest {
         Optional<User> found = userRepo.findUserById(created.getId());
         assertThat(found).isEmpty();
     }
-
 }

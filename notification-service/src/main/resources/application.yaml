@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: notification-service
+
+  kafka:
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.example.common.model
+        spring.json.value.default.type: com.example.common.model.UserEvent
+      enable-auto-commit: true
+
+  mail:
+    host: smtp.example.com
+    port: 587
+    username: your-email@mail.com
+    password: your-password
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+    default-encoding: UTF-8
+
+
