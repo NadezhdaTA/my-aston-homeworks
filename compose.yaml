@@ -1,9 +1,83 @@
 services:
-  postgres:
-    image: 'postgres:latest'
-    environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+  aston_user_service_db:
+    image: postgres:16.1
+    container_name: aston_user_service_db
     ports:
-      - '5432'
+      - "5432:5432"
+    volumes:
+      - aston_user_service_db_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: aston_user_service_db
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_USER: user
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d aston_user_service_db" ]
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka-broker1
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:29093,BROKER://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: BROKER://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093,2@kafka2:29095,3@kafka3:29097"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: U26_rcx3QN2rMkW-EO7hCw
+    networks:
+      - kafka-net
+
+  kafka2:
+    image: apache/kafka:3.7.0
+    container_name: kafka-broker2
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:29095,BROKER://0.0.0.0:29094,PLAINTEXT_HOST://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: BROKER://kafka2:29094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093,2@kafka2:29095,3@kafka3:29097"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: U26_rcx3QN2rMkW-EO7hCw
+    networks:
+      - kafka-net
+
+  kafka3:
+    image: apache/kafka:3.7.0
+    container_name: kafka-broker3
+    ports:
+      - "9096:9096"
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:29097,BROKER://0.0.0.0:29096,PLAINTEXT_HOST://0.0.0.0:9096
+      KAFKA_ADVERTISED_LISTENERS: BROKER://kafka3:29096,PLAINTEXT_HOST://localhost:9096
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093,2@kafka2:29095,3@kafka3:29097"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: U26_rcx3QN2rMkW-EO7hCw
+    networks:
+      - kafka-net
+
+volumes:
+  aston_user_service_db_data:
+
+networks:
+  kafka-net:
