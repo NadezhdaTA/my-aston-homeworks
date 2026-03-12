@@ -40,4 +40,9 @@ spring:
         request.timeout.ms: 10000
         enable.idempotence: true
 
+  springdoc:
+    api-docs:
+      path: /api-docs
+    swagger-ui:
+      path: /docs
 
