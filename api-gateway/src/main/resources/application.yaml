@@ -23,11 +23,37 @@ spring:
         webflux:
           routes:
             - id: user-service
-              uri: lb://user-service
+              uri: http://user-service:8080
               predicates:
                 - Path=/api/users/**
+              filters:
+                  args:
+                    name: userServiceCB
+                    fallbackUri: forward:/fallback/user-service
             - id: notification-service
-              uri: lb://notification-service
+              uri: http://notification-service:8081
               predicates:
                 - Path=/api/notification/**
+              filters:
+                  args:
+                    name: notificationServiceCB
+                    fallbackUri: forward:/fallback/notification-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceCB:
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+      notificationServiceCB:
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+    metrics:
+      enabled: true
 
