@@ -1,4 +1,4 @@
-FROM ubuntu:latest
-LABEL authors="Anatoly"
-
-ENTRYPOINT ["top", "-b"]
+FROM eclipse-temurin:21-jre-jammy
+VOLUME /tmp
+COPY target/user-service*.jar app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
