@@ -1,9 +1,10 @@
+
 server:
   port: 8888
 
 spring:
   application:
-    name: config-server
+    name: aston-config-server
   cloud:
     config:
       server:
