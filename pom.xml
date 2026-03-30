@@ -68,6 +68,7 @@
         <module>notification-service</module>
         <module>api-gateway</module>
         <module>eureka-server</module>
+        <module>aston-config-server</module>
     </modules>
 
 </project>

@@ -1,4 +1,47 @@
 services:
+
+  aston-config-server:
+    build:
+      context: ./aston-config-server
+      dockerfile: Dockerfile
+    container_name: aston-config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: git
+      GIT_URI: https://github.com/NadezhdaTA/aston-config-repo.git
+      GIT_DEFAULT_LABEL: main
+      SERVER_PORT: 8888
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - aston-config-server-data:/home/config-server/data
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: aston-api-gateway
+    ports:
+      - "8084:8084"
+    depends_on:
+      aston-config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8084/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
   aston_user_service_db:
     image: postgres:16.1
     container_name: aston_user_service_db
@@ -16,6 +59,69 @@ services:
       interval: 5s
       retries: 10
 
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: aston-user-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      aston_user_service_db:
+        condition: service_healthy
+      aston-config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://aston_user_service_db:5432/aston_user_service_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: 12345
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8081:8081"
+    environment:
+      EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_CLIENT_REGISTER-WITH-EUREKA: "true"
+      EUREKA_CLIENT_FETCH-REGISTRY: "true"
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP-SERVERS: kafka-broker1:9092, kafka-broker2:9094, kafka-broker3:9096
+      SPRING_KAFKA_CONSUMER_GROUP-ID: notification-service
+      SPRING_MAIL_HOST: smtp.example.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: your-email@mail.com
+      SPRING_MAIL_PASSWORD: your-password
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      SPRING_MAIL_DEFAULT-ENCODING: UTF-8
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   kafka:
     image: apache/kafka:3.7.0
     container_name: kafka-broker1
@@ -30,11 +136,17 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093,2@kafka2:29095,3@kafka3:29097"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: U26_rcx3QN2rMkW-EO7hCw
     networks:
       - kafka-net
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   kafka2:
     image: apache/kafka:3.7.0
@@ -50,11 +162,17 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093,2@kafka2:29095,3@kafka3:29097"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: U26_rcx3QN2rMkW-EO7hCw
     networks:
       - kafka-net
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9094" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   kafka3:
     image: apache/kafka:3.7.0
@@ -70,11 +188,17 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093,2@kafka2:29095,3@kafka3:29097"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: U26_rcx3QN2rMkW-EO7hCw
     networks:
       - kafka-net
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9096" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   eureka-server:
     build: ./eureka
@@ -91,6 +215,9 @@ services:
 
 volumes:
   aston_user_service_db_data:
+  aston-config-server-data:
 
 networks:
   kafka-net:
+  app-network:
+    driver: bridge
